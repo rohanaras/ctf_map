@@ -6,7 +6,7 @@ A mobile web map for a city-wide game of capture the flag across DC, Arlington a
   **Red** defends the West (incl. all of Virginia, by rule), **Blue** defends the East.
 - **Start:** Scott Circle (★).
 - **Flags:** 15 per side, from the [Google My Map](https://www.google.com/maps/d/edit?mid=1TEIOawlrN2B1Hraah-fE7cfqU7zClOc).
-  Each has a 0.1 mi attacker safe zone, shown at zoom ≥ 16.
+  Each has a 0.1 mi attacker safe zone, shown at zoom ≥ 14.
 - **Metrorail** lines and stations; station entrances appear at zoom ≥ 16.
 - **Your location:** live dot, plus which territory you're in and the distance to the nearest flag / whether you're in a safe zone.
 

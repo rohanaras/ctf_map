@@ -2,7 +2,7 @@
   "use strict";
 
   const SAFE_ZONE_M = 160.934; // 0.1 mi
-  const SAFE_ZONE_MIN_ZOOM = 16;
+  const SAFE_ZONE_MIN_ZOOM = 14;
   const ENTRANCE_MIN_ZOOM = 16;
   const START = [38.90767, -77.03647]; // Scott Circle
 

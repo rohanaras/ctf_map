@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%9A%A9%3C/text%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>DC Capture the Flag</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha384-c6Rcwz4e4CITMbu/NBmnNS8yN2sC3cUElMEMfP3vqqKFp7GOYaaBBCqmaWBjmkjb" crossorigin="anonymous">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map"></div>
+
+<div id="status" class="panel" aria-live="polite">
+  <div id="status-main">Tap ◎ to show your location</div>
+  <div id="status-sub"></div>
+</div>
+
+<div class="controls">
+  <button id="btn-legend" class="fab" aria-label="Legend">?</button>
+  <button id="btn-locate" class="fab" aria-label="Show my location">◎</button>
+</div>
+
+<div id="legend" class="panel" hidden>
+  <button id="legend-close" aria-label="Close">×</button>
+  <h1>DC Capture the Flag</h1>
+  <ul>
+    <li><span class="sw sw-red"></span><b>Red</b> defends the <b>West</b> (incl. Arlington &amp; Alexandria)</li>
+    <li><span class="sw sw-blue"></span><b>Blue</b> defends the <b>East</b></li>
+    <li><span class="sw sw-line"></span>Dividing line: 16th St NW</li>
+    <li><span class="sw sw-start">★</span>Start: Scott Circle</li>
+    <li><span class="sw sw-zone"></span>0.1 mi attacker safe zone (zoom in)</li>
+    <li><span class="sw sw-ent"></span>Metro entrance (zoom in)</li>
+  </ul>
+  <p>Only Metrorail and walking allowed.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js" integrity="sha384-tXYNKOHx4T02jMP7YYCtBxPIv1B5gaA5mcVPBzqMp6d7VzWzxJgI2aWF/nJLrQdS" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet-polylineoffset@1.1.1/leaflet.polylineoffset.js" integrity="sha384-aawDUKQFc9RzgelO2A124IvVZeJgYhuhw80CtD84NiVOUWyiXGY31u2LozNQVJtM" crossorigin="anonymous"></script>
+<script src="app.js"></script>
+</body>
+</html>

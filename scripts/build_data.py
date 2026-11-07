@@ -20,7 +20,7 @@ import urllib.request
 import defusedxml.ElementTree as ET
 from pathlib import Path
 
-from shapely.geometry import LineString, mapping, shape
+from shapely.geometry import LineString, Polygon, mapping, shape
 from shapely.ops import unary_union
 
 OUT = Path(__file__).resolve().parent.parent / "data"
@@ -124,14 +124,21 @@ def build_flags():
 
 
 def build_play_area():
+    """Write the play-area outline; return (DC, Virginia) geometries."""
     where = urllib.parse.quote("GEOID IN ('11001','51013','51510')")
     gj = get_json(
         "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/"
-        f"State_County/MapServer/1/query?where={where}&outFields=NAME&f=geojson&outSR=4326"
+        f"State_County/MapServer/1/query?where={where}&outFields=GEOID&f=geojson&outSR=4326"
     )
-    # Buffer out/in slightly to close slivers along shared borders.
-    area = unary_union([shape(f["geometry"]).buffer(0.00005) for f in gj["features"]])
-    area = area.buffer(-0.00005).simplify(0.00003)
+    geoms = {f["properties"]["GEOID"]: shape(f["geometry"]) for f in gj["features"]}
+
+    def merge(gs):
+        # Buffer out/in slightly to close slivers along shared borders.
+        return unary_union([g.buffer(0.00005) for g in gs]).buffer(-0.00005)
+
+    dc = merge([geoms["11001"]])
+    va = merge([geoms["51013"], geoms["51510"]])
+    area = merge([dc, va]).simplify(0.00003)
     write(
         "play_area.geojson",
         {
@@ -140,9 +147,15 @@ def build_play_area():
             "properties": {"bounds": list(area.bounds)},
         },
     )
+    return dc, va
 
 
-def build_divider():
+def build_divider(dc, va):
+    """Write the 16th St dividing line and the West/East territories.
+
+    By rule, all of Virginia is West; DC is split by 16th St NW, extended
+    straight south from Lafayette Square to the DC line.
+    """
     q = (
         '[out:json];way["highway"]["name"="16th Street Northwest"]'
         "(38.89,-77.05,39.0,-77.02);out geom;"
@@ -161,16 +174,29 @@ def build_divider():
     line = [
         (sum(v) / len(v), k * 0.005) for k, v in sorted(bins.items(), reverse=True)
     ]
-    north_lon = line[0][0]
-    south_lon = line[-1][0]
-    # Extend straight north past the MD line and straight south (through the
-    # White House / Mall) past the bottom of the play area; the map's mask
-    # hides whatever falls outside the play area.
-    coords = [(north_lon, 39.05)] + line + [(south_lon, 38.70)]
-    coords = [(round(x, 5), round(y, 5)) for x, y in coords]
+    # Extend straight north past the MD line and straight south past DC.
+    coords = [(line[0][0], 39.05)] + line + [(line[-1][0], 38.70)]
+    full = LineString(coords)
+
+    west_half = Polygon([(-78, 39.05)] + coords + [(-78, 38.70)])
+    west = unary_union([dc.intersection(west_half), va]).simplify(0.00003)
+    east = dc.difference(west_half).simplify(0.00003)
+    divider = full.intersection(dc)  # only draw the line inside DC
+
     write(
         "divider.geojson",
-        {"type": "Feature", "geometry": mapping(LineString(coords)), "properties": {}},
+        {"type": "Feature", "geometry": round_coords(mapping(divider)), "properties": {}},
+    )
+    write(
+        "territories.geojson",
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {"type": "Feature", "properties": {"side": side},
+                 "geometry": round_coords(mapping(g.buffer(0)))}
+                for side, g in [("West", west), ("East", east)]
+            ],
+        },
     )
 
 
@@ -190,6 +216,6 @@ def build_metro():
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
     build_flags()
-    build_play_area()
-    build_divider()
+    dc, va = build_play_area()
+    build_divider(dc, va)
     build_metro()

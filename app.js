@@ -2,7 +2,7 @@
   "use strict";
 
   const SAFE_ZONE_M = 160.934; // 0.1 mi
-  const SAFE_ZONE_MIN_ZOOM = 15;
+  const SAFE_ZONE_MIN_ZOOM = 16;
   const ENTRANCE_MIN_ZOOM = 16;
   const START = [38.90767, -77.03647]; // Scott Circle
 
@@ -77,15 +77,6 @@
       (rings) => inRing(pt, rings[0]) && !rings.slice(1).some((h) => inRing(pt, h))
     );
   }
-  function dividerLngAt(lat, coords) {
-    // coords run north → south as [lng,lat]
-    for (let i = 0; i < coords.length - 1; i++) {
-      const [x1, y1] = coords[i];
-      const [x2, y2] = coords[i + 1];
-      if (lat <= y1 && lat >= y2) return x1 + ((lat - y1) / (y2 - y1)) * (x2 - x1);
-    }
-    return coords[coords.length - 1][0];
-  }
   const fmtDist = (m) => {
     const mi = m / 1609.344;
     return mi < 0.2 ? `${Math.round(m * 3.28084)} ft` : `${mi.toFixed(mi < 10 ? 2 : 1)} mi`;
@@ -93,19 +84,20 @@
 
   // ---------- state ----------
   let playArea = null;
-  let divider = null;
+  let territories = []; // [{side, geometry}]: all of VA is West by rule
   let flags = [];
 
   Promise.all([
     getJSON("play_area"),
     getJSON("divider"),
+    getJSON("territories"),
     getJSON("metro_lines"),
     getJSON("metro_stations"),
     getJSON("metro_entrances"),
     getJSON("flags"),
-  ]).then(([area, div, lines, stations, entrances, flagFC]) => {
+  ]).then(([area, div, terr, lines, stations, entrances, flagFC]) => {
     playArea = area.geometry;
-    divider = div.geometry.coordinates;
+    territories = terr.features.map((f) => ({ side: f.properties.side, geometry: f.geometry }));
     flags = flagFC.features;
 
     // --- crop: fit, limit panning, mask everything outside the play area
@@ -130,18 +122,15 @@
       style: { color: "#555", weight: 2, fill: false, interactive: false },
     }).addTo(map);
 
-    // --- team territory tint, split along 16th St (mask hides the overflow)
-    const divLatLng = divider.map(([x, y]) => [y, x]);
-    const north = divLatLng[0][0];
-    const south = divLatLng[divLatLng.length - 1][0];
-    L.polygon([[north, -78], ...divLatLng, [south, -78]], {
-      pane: "tint", stroke: false, fillColor: TEAM.West.color, fillOpacity: 0.06, interactive: false,
+    // --- team territories (West = Virginia + DC west of 16th St) and the line
+    L.geoJSON(terr, {
+      pane: "tint",
+      interactive: false,
+      style: (f) => ({ stroke: false, fillColor: TEAM[f.properties.side].color, fillOpacity: 0.07 }),
     }).addTo(map);
-    L.polygon([[north, -76], ...divLatLng, [south, -76]], {
-      pane: "tint", stroke: false, fillColor: TEAM.East.color, fillOpacity: 0.06, interactive: false,
-    }).addTo(map);
-    L.polyline(divLatLng, {
-      color: "#1d1d1f", weight: 3, dashArray: "8 6", opacity: 0.85, interactive: false,
+    L.geoJSON(div, {
+      interactive: false,
+      style: { color: "#1d1d1f", weight: 3, dashArray: "8 6", opacity: 0.85 },
     }).addTo(map);
 
     // --- metro lines (offset where lines share track)
@@ -266,12 +255,12 @@
     const ll = [pos.coords.latitude, pos.coords.longitude];
     statusEl.classList.remove("red", "blue");
     if (!playArea) return;
-    if (!inPolygon(ll, playArea)) {
+    const t = territories.find((t) => inPolygon(ll, t.geometry));
+    if (!t) {
       statusMain.textContent = "Outside the play area";
     } else {
-      const side = ll[1] < dividerLngAt(ll[0], divider) ? "West" : "East";
-      statusEl.classList.add(side === "West" ? "red" : "blue");
-      statusMain.textContent = `${side} territory · ${TEAM[side].name} defends`;
+      statusEl.classList.add(t.side === "West" ? "red" : "blue");
+      statusMain.textContent = `${t.side} territory · ${TEAM[t.side].name} defends`;
     }
     let nearest = null;
     for (const f of flags) {
